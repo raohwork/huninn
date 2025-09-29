@@ -46,6 +46,48 @@ func FixedBottomLayout(reserve int, top, bottom tea.Model) *FixedLayout {
 	return newFixed(false, true, reserve, top, bottom)
 }
 
+type emptyLayout struct {
+	w, h int
+}
+
+func (e *emptyLayout) Init() tea.Cmd { return nil }
+func (e *emptyLayout) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if msg, ok := msg.(tapioca.ResizeMsg); ok {
+		e.w = msg.Width
+		e.h = msg.Height
+	}
+	return e, nil
+}
+func (e *emptyLayout) View() string {
+	b := strings.Builder{}
+	b.WriteString(strings.Repeat(" ", e.w))
+	for i := 1; i < e.h; i++ {
+		b.Write([]byte{'\n'})
+		b.WriteString(strings.Repeat(" ", e.w))
+	}
+	return b.String()
+}
+
+// PadTop is a convenience function to add padding to the top of a component.
+func PadTop(reserve int, component tea.Model) *FixedLayout {
+	return FixedTopLayout(reserve, &emptyLayout{}, component)
+}
+
+// PadBottom is a convenience function to add padding to the bottom of a component.
+func PadBottom(reserve int, component tea.Model) *FixedLayout {
+	return FixedBottomLayout(reserve, component, &emptyLayout{})
+}
+
+// PadLeft is a convenience function to add padding to the left of a component.
+func PadLeft(reserve int, component tea.Model) *FixedLayout {
+	return FixedLeftLayout(reserve, &emptyLayout{}, component)
+}
+
+// PadRight is a convenience function to add padding to the right of a component.
+func PadRight(reserve int, component tea.Model) *FixedLayout {
+	return FixedRightLayout(reserve, component, &emptyLayout{})
+}
+
 func newFixed(horizontal, end bool, reserve int, components ...tea.Model) *FixedLayout {
 	if len(components) != 2 {
 		panic("fixed can only contain up to 2 components")
