@@ -1,0 +1,69 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+package pearl
+
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/google/uuid"
+)
+
+// TaskController is used to control what info is shown for a task.
+type TaskController interface {
+	SetDesc(desc string)
+	SetState(state TaskState, progress float64)
+	Done()
+	Fail()
+	Remove()
+}
+
+type taskController struct {
+	send func(tea.Msg)
+	id   string
+}
+
+func (tc *taskController) SetDesc(desc string) {
+	tc.send(UpdateTaskDescMsg{ID: tc.id, Desc: desc})
+}
+
+func (tc *taskController) SetState(state TaskState, progress float64) {
+	if !state.IsValid() {
+		return
+	}
+	tc.send(UpdateTaskStateMsg{ID: tc.id, State: state, Progress: progress})
+}
+
+func (tc *taskController) Done() {
+	tc.send(UpdateTaskStateMsg{ID: tc.id, State: TaskDone, Progress: 1})
+}
+
+func (tc *taskController) Fail() {
+	tc.send(UpdateTaskStateMsg{ID: tc.id, State: TaskFailed, Progress: -1})
+}
+
+func (tc *taskController) Remove() {
+	tc.send(RemoveTaskMsg{ID: tc.id})
+}
+
+// TaskManager is used to create and manage tasks.
+type TaskManager interface {
+	AddTask(desc, id string) TaskController
+}
+
+type taskManager struct {
+	send func(tea.Msg)
+}
+
+func (tm taskManager) AddTask(desc, id string) TaskController {
+	if id == "" {
+		id = uuid.New().String()
+	}
+	tm.send(AddTaskMsg{ID: id, Desc: desc})
+	return &taskController{send: tm.send, id: id}
+}
+
+// NewTaskManager creates a new TaskManager.
+func NewTaskManager(send func(tea.Msg)) TaskManager {
+	return taskManager{send: send}
+}
