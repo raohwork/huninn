@@ -149,6 +149,16 @@ func (c *Component) ResizeBuffer(newSize int) {
 	c.entries.Resize(newSize)
 }
 
+// Width returns the current width of the component.
+func (c *Component) Width() int {
+	return c.width
+}
+
+// Height returns the current height of the component.
+func (c *Component) Height() int {
+	return c.height
+}
+
 // NewComponent creates a new component with the specified entry capacity.
 // The size parameter determines how many entries the circular buffer can hold.
 // When the buffer is full, adding new entries will overwrite the oldest ones.
