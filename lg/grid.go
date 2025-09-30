@@ -49,6 +49,8 @@ func (m *gridMap) add(x, y, w, h, idx int) bool {
 // of 4 columns and 3 rows, would divide the screen into cells of width 20 and
 // height 8. A component added at position (0, 0) with a span of (2, 1) would
 // occupy the area from (0, 0) to (39, 7) inclusive.
+//
+// Warning: The minimum valid size for a cell is (1, 1), NO FLOAT POINT ACCEPTED.
 type GridLayout struct {
 	components []gridSpec
 	w, h       int
