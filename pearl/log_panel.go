@@ -7,6 +7,8 @@ package pearl
 import (
 	"bytes"
 	"io"
+	"strings"
+	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/raohwork/huninn/tapioca"
@@ -101,9 +103,10 @@ type logWriterImpl struct {
 	also io.Writer
 	lp   *LogPanel
 	send func(tea.Msg)
+	lock sync.Mutex
 }
 
-// LogPanelWriter returns an io.Writer that writes log messages to the given LogPanel.
+// CreateWriter returns an io.Writer that writes log messages to the given LogPanel.
 //
 // The send function is used to send LogMsg messages to the Bubble Tea program.
 //
@@ -116,25 +119,47 @@ type logWriterImpl struct {
 //	...
 //	logger := log.New(pearl.LogPanelWriter(logPanel, send, logFile), "", log.LstdFlags)
 //	logger.Println("This log message is written to both logPanel and logFile")
-func LogPanelWriter(lp *LogPanel, send func(tea.Msg), also io.Writer) io.Writer {
+func (lp *LogPanel) CreateWriter(send func(tea.Msg), also io.Writer) io.Writer {
 	if lp == nil {
 		panic("lp is nil")
 	}
 	if send == nil {
 		panic("send is nil")
 	}
-	return logWriterImpl{
+	return &logWriterImpl{
 		lp:   lp,
 		send: send,
 		also: also,
 	}
 }
 
-func (w logWriterImpl) Write(p []byte) (n int, err error) {
+func (w *logWriterImpl) WriteString(p string) (n int, err error) {
+	if w.also == nil {
+		return w.Write([]byte(p))
+	}
+
+	ww, ok := w.also.(io.StringWriter)
+	if !ok {
+		return w.Write([]byte(p))
+	}
+
+	w.lock.Lock()
+	n, err = ww.WriteString(p)
+	w.lock.Unlock()
+
+	if err == nil {
+		w.send(LogMsg([]byte(strings.TrimRight(p, "\n"))))
+	}
+	return
+}
+
+func (w *logWriterImpl) Write(p []byte) (n int, err error) {
+	w.lock.Lock()
 	n = len(p)
 	if w.also != nil {
 		n, err = w.also.Write(p)
 	}
+	w.lock.Unlock()
 
 	if err == nil {
 		w.send(LogMsg(bytes.TrimRight(p, "\n")))
