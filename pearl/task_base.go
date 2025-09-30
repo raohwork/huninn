@@ -97,6 +97,7 @@ func (i *taskInfo) render() string {
 type TaskList struct {
 	tasks map[string]*taskInfo
 	impl  *tapioca.Component
+	id    int64
 
 	// cached info
 	pendingTasks []string // indexes of pending tasks
@@ -104,9 +105,12 @@ type TaskList struct {
 	completed    []string // indexes of completed tasks (done or failed)
 }
 
+func (t *TaskList) ID() int64 { return t.id }
+
 // NewTaskList creates a new TaskList component.
 func NewTaskList() *TaskList {
 	return &TaskList{
+		id:    tapioca.NewID(),
 		tasks: make(map[string]*taskInfo),
 		impl:  tapioca.NewComponent(10, tapioca.HorizontalScrollable()),
 	}
@@ -116,16 +120,18 @@ func NewTaskList() *TaskList {
 //
 // If the id already exists, the task will not be added.
 type AddTaskMsg struct {
-	ID   string
-	Desc string
+	TaskListID int64
+	ID         string
+	Desc       string
 }
 
 // UpdateTaskStateMsg is a message to update the state of a task.
 //
 // If the id does not exist, the message will be ignored.
 type UpdateTaskStateMsg struct {
-	ID    string
-	State TaskState
+	TaskListID int64
+	ID         string
+	State      TaskState
 
 	// ignored if State is not TaskRunning
 	// value between 0.0 and 1.0
@@ -138,13 +144,15 @@ type UpdateTaskStateMsg struct {
 //
 // If the id does not exist, the message will be ignored.
 type UpdateTaskDescMsg struct {
-	ID   string
-	Desc string
+	TaskListID int64
+	ID         string
+	Desc       string
 }
 
 // RemoveTaskMsg is a message to remove a task.
 //
 // If the id does not exist, the message will be ignored.
 type RemoveTaskMsg struct {
-	ID string
+	TaskListID int64
+	ID         string
 }
