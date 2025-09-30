@@ -6,7 +6,6 @@ package pearl
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/google/uuid"
 	"github.com/raohwork/huninn/tapioca"
 )
 
@@ -14,14 +13,14 @@ import (
 //
 // Shrinking will lost some content.
 type Block struct {
-	id   uuid.UUID
+	id   int64
 	impl *tapioca.Component
 }
 
 // NewBlock creates a new Block component with horizontal and vertical scrolling enabled.
 func NewBlock() *Block {
 	return &Block{
-		id: uuid.New(),
+		id: tapioca.NewID(),
 		impl: tapioca.NewComponent(
 			1,
 			tapioca.HorizontalScrollable(),
@@ -32,7 +31,7 @@ func NewBlock() *Block {
 
 // BlockSetContentMsg is a message type used to set the content of a Block component.
 type BlockSetContentMsg struct {
-	id   uuid.UUID
+	id   int64
 	data []string
 }
 

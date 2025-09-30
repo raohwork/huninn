@@ -5,8 +5,10 @@
 package pearl
 
 import (
+	"strconv"
+
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/google/uuid"
+	"github.com/raohwork/huninn/tapioca"
 )
 
 // TaskController is used to control what info is shown for a task.
@@ -57,7 +59,7 @@ type taskManager struct {
 
 func (tm taskManager) AddTask(desc, id string) TaskController {
 	if id == "" {
-		id = uuid.New().String()
+		id = "task#" + strconv.FormatInt(tapioca.NewID(), 10)
 	}
 	tm.send(AddTaskMsg{ID: id, Desc: desc})
 	return &taskController{send: tm.send, id: id}
