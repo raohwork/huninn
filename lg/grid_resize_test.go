@@ -39,62 +39,62 @@ func (m *MockComponent) View() string {
 
 func TestGridLayout_HandleResize(t *testing.T) {
 	tests := []struct {
-		name               string
-		gridW, gridH       int
+		name                 string
+		gridW, gridH         int
 		terminalW, terminalH int
-		components         []struct{ x, y, w, h int }
-		expectedError      bool
-		expectedCellWidths []int
-		expectedCellHeights []int
-		expectedResizeMsg   []tapioca.ResizeMsg
+		components           []struct{ x, y, w, h int }
+		expectedError        bool
+		expectedCellWidths   []int
+		expectedCellHeights  []int
+		expectedResizeMsg    []tapioca.ResizeMsg
 	}{
 		{
-			name:               "normal case - even division",
-			gridW:              2,
-			gridH:              2,
-			terminalW:          20,
-			terminalH:          10,
-			components:         []struct{ x, y, w, h int }{{0, 0, 1, 1}, {1, 1, 1, 1}},
-			expectedError:      false,
-			expectedCellWidths: []int{10, 10},
+			name:                "normal case - even division",
+			gridW:               2,
+			gridH:               2,
+			terminalW:           20,
+			terminalH:           10,
+			components:          []struct{ x, y, w, h int }{{0, 0, 1, 1}, {1, 1, 1, 1}},
+			expectedError:       false,
+			expectedCellWidths:  []int{10, 10},
 			expectedCellHeights: []int{5, 5},
-			expectedResizeMsg:  []tapioca.ResizeMsg{{Width: 10, Height: 5}, {Width: 10, Height: 5}},
+			expectedResizeMsg:   []tapioca.ResizeMsg{{Width: 10, Height: 5}, {Width: 10, Height: 5}},
 		},
 		{
-			name:               "remainder distribution - width example (82÷5)",
-			gridW:              5,
-			gridH:              1,
-			terminalW:          82,
-			terminalH:          10,
-			components:         []struct{ x, y, w, h int }{{0, 0, 5, 1}},
-			expectedError:      false,
-			expectedCellWidths: []int{17, 17, 16, 16, 16}, // 82÷5=16 remainder 2, distributed to first 2 cells
+			name:                "remainder distribution - width example (82÷5)",
+			gridW:               5,
+			gridH:               1,
+			terminalW:           82,
+			terminalH:           10,
+			components:          []struct{ x, y, w, h int }{{0, 0, 5, 1}},
+			expectedError:       false,
+			expectedCellWidths:  []int{17, 17, 16, 16, 16}, // 82÷5=16 remainder 2, distributed to first 2 cells
 			expectedCellHeights: []int{10},
-			expectedResizeMsg:  []tapioca.ResizeMsg{{Width: 82, Height: 10}},
+			expectedResizeMsg:   []tapioca.ResizeMsg{{Width: 82, Height: 10}},
 		},
 		{
-			name:               "remainder distribution - height example",
-			gridW:              1,
-			gridH:              3,
-			terminalW:          10,
-			terminalH:          8,
-			components:         []struct{ x, y, w, h int }{{0, 0, 1, 3}},
-			expectedError:      false,
-			expectedCellWidths: []int{10},
+			name:                "remainder distribution - height example",
+			gridW:               1,
+			gridH:               3,
+			terminalW:           10,
+			terminalH:           8,
+			components:          []struct{ x, y, w, h int }{{0, 0, 1, 3}},
+			expectedError:       false,
+			expectedCellWidths:  []int{10},
 			expectedCellHeights: []int{3, 3, 2}, // 8÷3=2 remainder 2, distributed to first 2 rows
-			expectedResizeMsg:  []tapioca.ResizeMsg{{Width: 10, Height: 8}},
+			expectedResizeMsg:   []tapioca.ResizeMsg{{Width: 10, Height: 8}},
 		},
 		{
-			name:               "spanning components",
-			gridW:              3,
-			gridH:              2,
-			terminalW:          15,
-			terminalH:          6,
-			components:         []struct{ x, y, w, h int }{{0, 0, 2, 1}, {2, 0, 1, 2}},
-			expectedError:      false,
-			expectedCellWidths: []int{5, 5, 5},
+			name:                "spanning components",
+			gridW:               3,
+			gridH:               2,
+			terminalW:           15,
+			terminalH:           6,
+			components:          []struct{ x, y, w, h int }{{0, 0, 2, 1}, {2, 0, 1, 2}},
+			expectedError:       false,
+			expectedCellWidths:  []int{5, 5, 5},
 			expectedCellHeights: []int{3, 3},
-			expectedResizeMsg:  []tapioca.ResizeMsg{{Width: 10, Height: 3}, {Width: 5, Height: 6}},
+			expectedResizeMsg:   []tapioca.ResizeMsg{{Width: 10, Height: 3}, {Width: 5, Height: 6}},
 		},
 		{
 			name:          "terminal width too small",
@@ -128,7 +128,7 @@ func TestGridLayout_HandleResize(t *testing.T) {
 			gridW:         1,
 			gridH:         10,
 			terminalW:     10,
-			terminalH:     5, // 5÷10=0 remainder 5, first 5 rows get height 1, last 5 get height 0
+			terminalH:     5,                                        // 5÷10=0 remainder 5, first 5 rows get height 1, last 5 get height 0
 			components:    []struct{ x, y, w, h int }{{0, 6, 1, 1}}, // 6th row has height 0 < 1
 			expectedError: true,
 		},
@@ -181,11 +181,11 @@ func TestGridLayout_HandleResize(t *testing.T) {
 func TestGridLayout_HandleResize_CellSizeCalculation(t *testing.T) {
 	// Test specific edge cases for cell size calculation
 	tests := []struct {
-		name               string
+		name                 string
 		terminalW, terminalH int
-		gridW, gridH       int
-		expectedCellWidths []int
-		expectedCellHeights []int
+		gridW, gridH         int
+		expectedCellWidths   []int
+		expectedCellHeights  []int
 	}{
 		{
 			name:                "width remainder distribution",
