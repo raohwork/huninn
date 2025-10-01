@@ -105,6 +105,15 @@ func (e *Entry) Lines(width int) int {
 	return max(1, len(e.warpPositions(width)))
 }
 
+// RuneWidth returns the display width of a rune, considering East Asian wide characters.
+func RuneWidth(r rune) int {
+	props := width.LookupRune(r)
+	if props.Kind() == width.EastAsianWide || props.Kind() == width.EastAsianFullwidth {
+		return 2
+	}
+	return 1
+}
+
 func computeRuneEndOffsets(styledRunes []StyledRune) []int {
 	// Pre-calculate cumulative widths for all runes
 	// Example: "ab你好cd" -> []int{1,2,4,6,7,8} (cumulative widths)
@@ -112,11 +121,7 @@ func computeRuneEndOffsets(styledRunes []StyledRune) []int {
 	currentWidth := 0
 
 	for i, sr := range styledRunes {
-		props := width.LookupRune(sr.Rune)
-		runeWidth := 1 // default width for most characters
-		if props.Kind() == width.EastAsianWide || props.Kind() == width.EastAsianFullwidth {
-			runeWidth = 2
-		}
+		runeWidth := RuneWidth(sr.Rune)
 
 		currentWidth += runeWidth
 		cumulativeWidths[i] = currentWidth
