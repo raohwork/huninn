@@ -60,49 +60,6 @@ func TestEntry_StyledShift(t *testing.T) {
 			end:      9,
 			expected: "\x1b[31m45\x1b[0m67\x1b[32m8\x1b[0m",
 		},
-		// with wide characters
-		{
-			name:     "shift with wide characters, no styles",
-			input:    "01二三四5六789",
-			start:    3,
-			end:      6,
-			expected: "三四5",
-		},
-		{
-			name:     "shift wide characters with styles",
-			input:    "01二\x1b[31m三四5\x1b[0m六789", // "345" is red
-			start:    3,
-			end:      6,
-			expected: "\x1b[31m三四5\x1b[0m",
-		},
-		{
-			name:     "shift wide characters with styles, partial start",
-			input:    "01二\x1b[31m三四5\x1b[0m六789", // "345" is red
-			start:    4,
-			end:      7,
-			expected: "\x1b[31m四5\x1b[0m六",
-		},
-		{
-			name:     "shift wide characters with styles, partial end",
-			input:    "01二\x1b[31m三四5\x1b[0m六789", // "345" is red
-			start:    2,
-			end:      5,
-			expected: "二\x1b[31m三四\x1b[0m",
-		},
-		{
-			name:     "shift wide characters with styles, spanning multiple styles, reset at end",
-			input:    "01二\x1b[31m三四5\x1b[0m六7\x1b[32m89\x1b[0m", // "345" is red, "89" is green
-			start:    4,
-			end:      9,
-			expected: "\x1b[31m四5\x1b[0m六7\x1b[32m8\x1b[0m",
-		},
-		{
-			name:     "shift wide characters with styles, spanning multiple styles, no reset at end",
-			input:    "01二\x1b[31m三四5\x1b[0m六7\x1b[32m89", // "345" is red, "89" is green
-			start:    4,
-			end:      9,
-			expected: "\x1b[31m四5\x1b[0m六7\x1b[32m8\x1b[0m",
-		},
 		{
 			name:     "shift exceeding length",
 			input:    "0123456789",
@@ -152,6 +109,51 @@ func TestEntry_StyledShift(t *testing.T) {
 			end:      5,
 			expected: "",
 		},
+		// with wide characters
+		{
+			name:     "[wide] shift with wide characters, no styles",
+			input:    "01三五67九", // position 2-3, 4-5 and 8-9 is wide characters
+			start:    2,
+			end:      6,
+			expected: "三五",
+		},
+		{
+			name:     "[wide] begin at partial wide character",
+			input:    "01三五67九",
+			start:    3,
+			end:      6,
+			expected: " 五",
+		},
+		{
+			name:     "[wide] end at partial wide character",
+			input:    "01三五67九",
+			start:    2,
+			end:      5,
+			expected: "三 ",
+		},
+		{
+			name:  "[wide] shift with wide characters and styles",
+			input: "01\x1b[31m三五\x1b[0m67\x1b[32m九\x1b[0m", // "三五" is red, "九" is green
+			//      01        2345       67        89
+			start:    2,
+			end:      7,
+			expected: "\x1b[31m三五\x1b[0m6",
+		},
+		{
+			name:     "[wide] shift with wide characters and styles, partial start",
+			input:    "01\x1b[31m三五\x1b[0m67\x1b[32m九\x1b[0m", // "三五" is red, "九" is green
+			start:    3,
+			end:      9,
+			expected: " \x1b[31m五\x1b[0m67 ",
+		},
+		{
+			name:  "[wide] shift with wide characters and styles, partial start without reset at end",
+			input: "01\x1b[31m三五\x1b[0m67\x1b[32m九", // "三五" is red, "九" is green
+			//      01        2345       67        89
+			start:    3,
+			end:      9,
+			expected: " \x1b[31m五\x1b[0m67 ",
+		},
 	}
 
 	for _, tc := range cases {
@@ -159,6 +161,110 @@ func TestEntry_StyledShift(t *testing.T) {
 			entry := NewEntry(tc.input)
 			got := entry.StyledShift(tc.start, tc.end-tc.start)
 			assert.Equal(t, tc.expected, got)
+		})
+	}
+}
+
+func TestEntry_ComputeStartAndEndForShift(t *testing.T) {
+	cases := []struct {
+		name              string
+		input             string
+		startCol          int
+		width             int
+		expectedStartIdx  int
+		expectedEndIdx    int
+		expectedHasPrefix bool
+		expectedHasSuffix bool
+	}{
+		{
+			name:  "width exceeds length",
+			input: "A一B二C三D",
+			//      0123456789  position
+			//      0 12 34 56  rune index
+			startCol: 7,
+			width:    4,
+			// expected to show "三D"
+			expectedStartIdx:  5,
+			expectedEndIdx:    7,
+			expectedHasPrefix: false,
+			expectedHasSuffix: false,
+		},
+		{
+			name:  "normal chars",
+			input: "01三五七89", // (7 runes, 10 characters wide)
+			//      0123456789  position
+			//      01 2 3 456  rune index
+			// expected to show "1三五七8"
+			startCol:          1,
+			width:             8,
+			expectedStartIdx:  1, // 1
+			expectedEndIdx:    6, // 9
+			expectedHasPrefix: false,
+			expectedHasSuffix: false,
+		},
+		{
+			name:  "no cut",
+			input: "01三五七89", // (7 runes, 10 characters wide)
+			//      0123456789  position
+			//      01 2 3 456  rune index
+			// expected to show "三五七"
+			startCol:          2,
+			width:             6,
+			expectedStartIdx:  2, // 三
+			expectedEndIdx:    5, // 8
+			expectedHasPrefix: false,
+			expectedHasSuffix: false,
+		},
+		{
+			name:  "cut both ends",
+			input: "01三五七89", // (7 runes, 10 characters wide)
+			// 	0123456789  position
+			//      01 2 3 456  rune index
+			// expected to show " 五 "
+			startCol:          3,
+			width:             4,
+			expectedStartIdx:  3, // 五
+			expectedEndIdx:    4, // 七
+			expectedHasPrefix: true,
+			expectedHasSuffix: true,
+		},
+		{
+			name:  "cut at start",
+			input: "01三五七89", // (7 runes, 10 characters wide)
+			//      0123456789  position
+			//      01 2 3 456  rune index
+			// expected to show " 五七"
+			startCol:          3,
+			width:             5,
+			expectedStartIdx:  3, // 五
+			expectedEndIdx:    5, // 8
+			expectedHasPrefix: true,
+			expectedHasSuffix: false,
+		},
+		{
+			name:  "cut at end",
+			input: "01三五七89", // (7 runes, 10 characters wide)
+			//      0123456789  position
+			//      01 2 3 456  rune index
+			// expected to show "三五 "
+			startCol:          2,
+			width:             5,
+			expectedStartIdx:  2, // 三
+			expectedEndIdx:    4, // 七
+			expectedHasPrefix: false,
+			expectedHasSuffix: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			entry := NewEntry(tc.input)
+			offsets := entry.runeEndOffsets()
+			startIdx, endIdx, hasPrefix, hasSuffix := computeStartAndEndForShift(offsets, tc.startCol, tc.width)
+			assert.Equal(t, tc.expectedStartIdx, startIdx, "startIdx mismatch")
+			assert.Equal(t, tc.expectedEndIdx, endIdx, "endIdx mismatch")
+			assert.Equal(t, tc.expectedHasPrefix, hasPrefix, "hasPrefix mismatch")
+			assert.Equal(t, tc.expectedHasSuffix, hasSuffix, "hasSuffix mismatch")
 		})
 	}
 }

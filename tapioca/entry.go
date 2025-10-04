@@ -56,6 +56,8 @@ type Entry struct {
 	f          func() []int
 }
 
+// runeEndOffsets returns the cumulative display widths at each rune position
+// Example: "ab你好cd" -> []int{1,2,4,6,7,8} (cumulative widths)
 func (e *Entry) runeEndOffsets() []int {
 	return e.f()
 }
@@ -139,6 +141,8 @@ func computeRuneEndOffsets(styledRunes []StyledRune) []int {
 }
 
 // styledSubstring returns the styled substring from start to end (exclusive)
+//
+// start and end are rune indices in e.styledData
 func (e *Entry) styledSubstring(start, end int) string {
 	if start >= end {
 		return ""
@@ -173,8 +177,12 @@ func (e *Entry) styledSubstring(start, end int) string {
 	return b.String()
 }
 
-// StyledLines returns the entry split into lines, each line wrapped at the given width
 func (e *Entry) StyledLines(width int) []string {
+	return e.StyledWarps(width)
+}
+
+// StyledWarps returns the entry split into lines, each line wrapped at the given width
+func (e *Entry) StyledWarps(width int) []string {
 	indexes := e.warpPositions(width)
 	if len(indexes) <= 1 {
 		// No wrapping needed, but still need to apply style
