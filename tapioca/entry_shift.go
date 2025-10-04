@@ -7,69 +7,7 @@ package tapioca
 import (
 	"sort"
 	"strings"
-	"unicode/utf8"
 )
-
-func (e *Entry) Shift(startCol, width int) string {
-	runeEndOffsets := e.runeEndOffsets()
-	if len(runeEndOffsets) == 0 {
-		return ""
-	}
-	if width < 2 {
-		width = 2
-	}
-
-	// Check if begin is beyond all characters
-	cl := len(runeEndOffsets)
-	if startCol >= runeEndOffsets[cl-1] {
-		return ""
-	}
-
-	// find left boundary
-	leftRuneIdx := 0
-	var hasPrefix bool
-
-	if startCol > 0 {
-		leftRuneIdx = sort.Search(cl, func(i int) bool { return runeEndOffsets[i] >= startCol })
-
-		if leftRuneIdx >= cl {
-			if hasPrefix {
-				return " "
-			}
-			return ""
-		}
-
-		if runeEndOffsets[leftRuneIdx] != startCol {
-			hasPrefix = true
-		}
-		leftRuneIdx++
-	}
-
-	// find right boundry
-	rightRuneIdx := sort.Search(cl, func(i int) bool { return runeEndOffsets[i] >= startCol+width })
-	if rightRuneIdx >= cl {
-		rightRuneIdx = cl - 1
-	} else if runeEndOffsets[rightRuneIdx] != startCol+width {
-		rightRuneIdx--
-	}
-
-	size := 0
-	for i := leftRuneIdx; i <= rightRuneIdx; i++ {
-		size += utf8.RuneLen(e.styledData[i].Rune)
-	}
-
-	buf := &strings.Builder{}
-	buf.Grow(size + 1)
-
-	if hasPrefix {
-		buf.WriteByte(' ')
-	}
-	for i := leftRuneIdx; i <= rightRuneIdx; i++ {
-		buf.WriteRune(e.styledData[i].Rune)
-	}
-
-	return buf.String()
-}
 
 // StyledShift 支援帶樣式的水平捲動功能
 func (e *Entry) StyledShift(startCol, width int) string {

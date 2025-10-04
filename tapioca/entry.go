@@ -60,10 +60,16 @@ func (e *Entry) runeEndOffsets() []int {
 	return e.f()
 }
 
-func (e *Entry) Len() int {
-	return len(e.styledData)
+// Width returns the display width of the entry (considering East Asian wide characters)
+func (e *Entry) Width() int {
+	offsets := e.runeEndOffsets()
+	if len(offsets) == 0 {
+		return 0
+	}
+	return offsets[len(offsets)-1]
 }
 
+// String returns the plain text representation of the entry (without styles)
 func (e *Entry) String() string {
 	b := &strings.Builder{}
 	b.Grow(len(e.styledData))
@@ -73,8 +79,9 @@ func (e *Entry) String() string {
 	return b.String()
 }
 
-func (e *Entry) Warps(width int) []string {
-	return e.warpLineTextWidth(width)
+// StyledString returns the styled text representation of the entry
+func (e *Entry) StyledString() string {
+	return e.styledSubstring(0, len(e.styledData))
 }
 
 func (e *Entry) warpPositions(width int) []int {
@@ -101,6 +108,7 @@ func (e *Entry) warpPositions(width int) []int {
 	return ret
 }
 
+// Lines returns the number of lines the entry would occupy when wrapped at the given width
 func (e *Entry) Lines(width int) int {
 	return max(1, len(e.warpPositions(width)))
 }
@@ -130,63 +138,39 @@ func computeRuneEndOffsets(styledRunes []StyledRune) []int {
 	return cumulativeWidths
 }
 
-// warpLineTextWidth implements text wrapping using golang.org/x/text/width
-// for efficient width calculations. It pre-calculates cumulative widths to
-// reduce memory allocations and improve performance.
-func (e *Entry) warpLineTextWidth(lineWidth int) []string {
-	indexes := e.warpPositions(lineWidth)
-	if len(indexes) <= 1 {
-		return []string{e.String()}
-	}
-
-	var result []string
-	for l, idx := len(indexes), 0; idx < l-1; idx++ {
-		// Extract runes from styledData and convert to string
-		runes := make([]rune, 0, indexes[idx+1]-indexes[idx])
-		for i := indexes[idx]; i < indexes[idx+1]; i++ {
-			runes = append(runes, e.styledData[i].Rune)
-		}
-		result = append(result, string(runes))
-	}
-	// Handle the last segment
-	runes := make([]rune, 0, len(e.styledData)-indexes[len(indexes)-1])
-	for i := indexes[len(indexes)-1]; i < len(e.styledData); i++ {
-		runes = append(runes, e.styledData[i].Rune)
-	}
-	result = append(result, string(runes))
-
-	return result
-}
-
-// styledSubstring 產生帶樣式的字串片段
+// styledSubstring returns the styled substring from start to end (exclusive)
 func (e *Entry) styledSubstring(start, end int) string {
 	if start >= end {
 		return ""
 	}
 
 	b := &strings.Builder{}
-	lastStyle := (*style)(nil) // Use nil to force initial style print
-
-	// Ensure the line starts with the correct style
-	initialStyle := e.styledData[start].Style
-	b.WriteString(initialStyle.String())
-	lastStyle = initialStyle
+	var lastStyle *style
 
 	for i := start; i < end; i++ {
 		sr := e.styledData[i]
 		if sr.Style != lastStyle {
-			b.WriteString(sr.Style.String())
+			// Use the Render method to properly transition between styles
+			if lastStyle == nil {
+				// First style in the substring
+				b.WriteString(sr.Style.String())
+			} else {
+				b.WriteString(sr.Style.Render(lastStyle))
+			}
 			lastStyle = sr.Style
 		}
 		b.WriteRune(sr.Rune)
 	}
 
-	// Append a reset code at the end of the line
-	b.WriteString("\x1b[m")
+	// Only append reset if we have any styling
+	if lastStyle != nil && !lastStyle.isEmpty() {
+		b.WriteString("\x1b[0m")
+	}
+
 	return b.String()
 }
 
-// StyledLines 產生帶樣式的字串陣列
+// StyledLines returns the entry split into lines, each line wrapped at the given width
 func (e *Entry) StyledLines(width int) []string {
 	indexes := e.warpPositions(width)
 	if len(indexes) <= 1 {
