@@ -66,7 +66,9 @@ func (e *Entry) runeEndOffsets() []int {
 	return e.f()
 }
 
-// Width returns the display width of the entry (considering East Asian wide characters)
+// Width returns the display width of the entry, ANSI styles are ignored
+//
+// For example, the width of "ab你好cd" is 8 (1+1+2+2+1+1)
 func (e *Entry) Width() int {
 	offsets := e.runeEndOffsets()
 	if len(offsets) == 0 {

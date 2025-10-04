@@ -9,9 +9,71 @@ import (
 	"strings"
 )
 
+// StyledMove returns a styled substring of the entry, as if viewport
+// is moving over the entry.
+//
+// startCol and width are in terms of display width, not string length. For
+// example:
+//
+//	(0, 4): start from 0, and 4 columns wide
+//	for "01三五七89" it returns "01三" (三 is 2 columns wide)
+//	for "0123456789" it returns "0123"
+//
+//	(-1, 5): start from -1, and 5 columns wide
+//	  for "01三五七89" it returns "  01三" (pad one space at beginning)
+//	  for "0123456789" it returns " 01234" (pad one space at beginning)
+//
+//	(8, 4): start from 8, and 4 columns wide
+//	  for "01三五七89" it returns "89  " (pad two space at end)
+//	  for "0123456789" it returns "89  " (pad two space at end)
+func (e *Entry) StyledMove(startCol, width int) string {
+	// algo:
+	//   1. compute if we have to pad spaces at beginning (startCol < 0)
+	//   2. compute if we have to pad spaces at end (startCol+width > entry width)
+	//   3. compute the substring to extract from the entry
+	//   4. combine them together
+	buf := &strings.Builder{}
+	totalWidth := e.Width()
+	prefix := 0
+	suffix := 0
+
+	if startCol < 0 {
+		prefix = -startCol
+		startCol = 0
+		width -= prefix
+	}
+	if startCol+width > totalWidth {
+		suffix = startCol + width - totalWidth
+		width -= suffix
+	}
+
+	str := e.StyledShift(startCol, width)
+	buf.Grow(len(str) + prefix + suffix)
+	for i := 0; i < prefix; i++ {
+		buf.WriteRune(' ')
+	}
+	buf.WriteString(str)
+	for i := 0; i < suffix; i++ {
+		buf.WriteRune(' ')
+	}
+	return buf.String()
+}
+
 // StyledShift returns a styled substring of the entry, starting at startCol
 //
-// startCol and width are in terms of display width, not string length.
+// startCol and width are in terms of display width, not string length. For
+// example:
+//
+//	(0, 4): start from 0, and 4 columns wide
+//	  for "01三五七89" it returns "01三" (三 is 2 columns wide)
+//	  for "0123456789" it returns "0123"
+//
+//	(1, 4): start from 1, and 4 columns wide
+//	  for "01三五七89" it returns "1三 " (五 is cutted)
+//	  for "0123456789" it returns "1234"
+//
+// It will not shift across entry boundary, so if the requested position is
+// larger than the entry width, it will return the whole entry.
 func (e *Entry) StyledShift(startCol, width int) string {
 	ret, _, _ := e.styledShift(startCol, width)
 	return ret
