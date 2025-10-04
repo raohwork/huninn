@@ -143,6 +143,9 @@ func (e *Entry) styledSubstring(start, end int) string {
 	if start >= end {
 		return ""
 	}
+	if len(e.styledData) == 0 {
+		return ""
+	}
 
 	b := &strings.Builder{}
 	var lastStyle *style
