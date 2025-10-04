@@ -18,6 +18,38 @@ func TestEntry_StyledWarps(t *testing.T) {
 		expected []string
 	}{
 		{
+			name:  "edge case: zero width",
+			input: "Hello, World!",
+			width: 0,
+			expected: []string{
+				"H", "e", "l", "l", "o", ",", " ", "W", "o", "r", "l", "d", "!",
+			},
+		},
+		{
+			name:  "edge case: negative width",
+			input: "Hello, World!",
+			width: -1,
+			expected: []string{
+				"H", "e", "l", "l", "o", ",", " ", "W", "o", "r", "l", "d", "!",
+			},
+		},
+		{
+			name:  "edge case: width 1 with wide characters",
+			input: "一二三",
+			width: 1,
+			expected: []string{
+				"一", "二", "三",
+			},
+		},
+		{
+			name:  "edge case: width 1 with wide characters, with style",
+			input: "一\x1b[31m二\x1b[m三",
+			width: 1,
+			expected: []string{
+				"一", "\x1b[31m二\x1b[0m", "三",
+			},
+		},
+		{
 			name:  "no style, no warps",
 			input: "Hello, World!",
 			width: 20,

@@ -59,6 +59,17 @@ func (e *Entry) styledShift(startCol, width int) (string, bool, bool) {
 	return buf.String(), hasPrefix, hasSuffix
 }
 
+func computeRuneSizeFromOffset(offsets []int, idx int) int {
+	l := len(offsets)
+	if idx < 0 || idx >= l {
+		return 1
+	}
+	if idx == 0 {
+		return offsets[0]
+	}
+	return offsets[idx] - offsets[idx-1]
+}
+
 func computeStartAndEndForShift(offsets []int, startCol, width int) (startIdx, endIdx int, hasPrefix, hasSuffix bool) {
 	n := len(offsets)
 
@@ -74,9 +85,10 @@ func computeStartAndEndForShift(offsets []int, startCol, width int) (startIdx, e
 	startIdx = sort.Search(n, func(i int) bool {
 		return offsets[i]-1 >= startCol
 	})
-	curSize := offsets[startIdx]
-	if startIdx > 0 {
-		curSize -= offsets[startIdx-1]
+	curSize := computeRuneSizeFromOffset(offsets, startIdx)
+	// special case for width 1 with wide char at beginning
+	if width == 1 && curSize > 1 {
+		return startIdx, startIdx + 1, false, false
 	}
 	// wide        && cut
 	if curSize > 1 && offsets[startIdx]-1 == startCol {
@@ -99,10 +111,7 @@ func computeStartAndEndForShift(offsets []int, startCol, width int) (startIdx, e
 		return offsets[i]-1 >= endCol
 	})
 	endIdx = min(endIdx, n-1)
-	curSize = offsets[endIdx]
-	if endIdx > 0 {
-		curSize -= offsets[endIdx-1]
-	}
+	curSize = computeRuneSizeFromOffset(offsets, endIdx)
 	// wide        && cut
 	if curSize > 1 && offsets[endIdx]-1 > endCol {
 		endIdx--

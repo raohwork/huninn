@@ -177,6 +177,19 @@ func TestEntry_ComputeStartAndEndForShift(t *testing.T) {
 		expectedHasSuffix bool
 	}{
 		{
+			name:  "width smaller than character size",
+			input: "一二三",
+			//      0123456789  position
+			//      0 12 34 56  rune index
+			startCol: 0,
+			width:    1,
+			// expected to show "一"
+			expectedStartIdx:  0,
+			expectedEndIdx:    1,
+			expectedHasPrefix: false,
+			expectedHasSuffix: false,
+		},
+		{
 			name:  "width exceeds length",
 			input: "A一B二C三D",
 			//      0123456789  position

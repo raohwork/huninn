@@ -27,8 +27,12 @@ func (e *Entry) computeWarpPoints(width int) []warpPoint {
 			startPos,
 			width,
 		)
+		realWidth := offsets[end-1] - offsets[start] + computeRuneSizeFromOffset(offsets, start)
+		if hasSuffix {
+			realWidth++
+		}
 		ret = append(ret, warpPoint{start, end, hasSuffix})
-		startPos += width
+		startPos += realWidth
 		if hasSuffix {
 			startPos-- // account for the space
 		}
