@@ -21,40 +21,39 @@ type style struct {
 	hidden    bool
 }
 
-func (s style) Clone() *style {
-	return &style{
-		fg:        s.fg,
-		bg:        s.bg,
-		bold:      s.bold,
-		faint:     s.faint,
-		italic:    s.italic,
-		underline: s.underline,
-		strike:    s.strike,
-		blink:     s.blink,
-		reverse:   s.reverse,
-		hidden:    s.hidden,
+func (s *style) Clone() *style {
+	if s.isEmpty() {
+		return nil
 	}
+
+	ret := *s
+	return &ret
 }
 
-// needsReset checks if transitioning from prevStyle to this style requires a reset
-func (s *style) needsReset(prevStyle *style) bool {
-	if prevStyle == nil {
-		return false
-	}
-	// Check if any boolean attribute goes from true to false
-	return (prevStyle.bold && !s.bold) ||
-		(prevStyle.faint && !s.faint) ||
-		(prevStyle.italic && !s.italic) ||
-		(prevStyle.underline && !s.underline) ||
-		(prevStyle.blink && !s.blink) ||
-		(prevStyle.reverse && !s.reverse) ||
-		(prevStyle.hidden && !s.hidden) ||
-		(prevStyle.strike && !s.strike)
-}
-
-func (s *style) String() string {
+func (s *style) isEmpty() bool {
 	if s == nil {
-		return "\x1b[m"
+		return true
+	}
+	return s.fg == "" && s.bg == "" && !s.bold && !s.faint && !s.italic && !s.underline && !s.strike && !s.blink && !s.reverse && !s.hidden
+}
+
+// Render returns the ANSI escape sequence to transition from prevStyle to s.
+//
+// It uses a really simple strategy: if prevStyle is not empty, it resets
+// all styles first, then applies s. This is not the most efficient way,
+// but it's simple and works well enough in practice.
+func (s *style) Render(prevStyle *style) string {
+	if !prevStyle.isEmpty() {
+		return "\x1b[0m" + s.String()
+	}
+
+	return s.String()
+}
+
+// String renders the style as an ANSI escape sequence.
+func (s *style) String() string {
+	if s.isEmpty() {
+		return ""
 	}
 
 	b := &strings.Builder{}
@@ -63,7 +62,6 @@ func (s *style) String() string {
 		b.WriteString(param)
 		b.WriteString("m")
 	}
-	w("0")
 
 	str := func(param string) {
 		if len(param) > 0 {
@@ -100,12 +98,15 @@ var (
 func parseAnsiCode(code string, previousStyle *style) *style {
 	// Crucial: Clone the previous style to avoid mutation.
 	newStyle := previousStyle.Clone()
+	if newStyle == nil {
+		newStyle = &style{}
+	}
 
 	// Strip off "\x1b[" and "m"
 	paramsStr := strings.TrimSuffix(strings.TrimPrefix(code, "\x1b["), "m")
-	if paramsStr == "" {
+	if paramsStr == "" || paramsStr == "0" {
 		// e.g., \x1b[m is a reset
-		return &style{}
+		return nil
 	}
 
 	parts := strings.Split(paramsStr, ";")
@@ -113,7 +114,9 @@ func parseAnsiCode(code string, previousStyle *style) *style {
 		part := parts[i]
 		switch part {
 		case "0": // Reset
-			return &style{}
+			if !newStyle.isEmpty() {
+				newStyle = &style{}
+			}
 		case "1":
 			newStyle.bold = true
 		case "2":
@@ -179,6 +182,9 @@ func parseAnsiCode(code string, previousStyle *style) *style {
 			}
 			// Ignore unknown codes (error handling strategy: continue with next codes)
 		}
+	}
+	if newStyle.isEmpty() {
+		return nil
 	}
 	return newStyle
 }
