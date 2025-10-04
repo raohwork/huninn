@@ -92,7 +92,7 @@ func (e *Entry) StyledString() string {
 
 // Lines returns the number of lines the entry would occupy when wrapped at the given width
 func (e *Entry) Lines(width int) int {
-	return len(e.computeWarpPoints(width))
+	return len(e.computeWarpPoints(max(1, width)))
 }
 
 // RuneWidth returns the display width of a rune, considering East Asian wide characters.
@@ -155,8 +155,4 @@ func (e *Entry) styledSubstring(start, end int) string {
 	}
 
 	return b.String()
-}
-
-func (e *Entry) StyledLines(width int) []string {
-	return e.StyledWarps(width)
 }

@@ -176,7 +176,7 @@ func (c *Component) buildVirtualScreen(entries []*Entry, noWrap bool) []string {
 			virtualLines = append(virtualLines, entry.String())
 		} else {
 			// Wrap mode: each entry may become multiple lines
-			wrappedLines := entry.Warps(c.width)
+			wrappedLines := entry.StyledWarps(c.width)
 			virtualLines = append(virtualLines, wrappedLines...)
 		}
 	}
@@ -222,7 +222,7 @@ func (c *Component) recomputeMaxLineWidth(entries []*Entry) {
 	}
 
 	for _, e := range entries {
-		if l := e.Len(); c.maxLineWidth < l {
+		if l := e.Width(); c.maxLineWidth < l {
 			c.maxLineWidth = l
 		}
 	}
