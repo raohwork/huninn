@@ -17,6 +17,8 @@ type StyledRune struct {
 	Style *style
 }
 
+// NewEntry creates a new Entry from the given string, parsing ANSI styles
+// and handling East Asian wide characters.
 func NewEntry(data string) *Entry {
 	// First, clean unsupported ANSI CSI sequences
 	data = ansiOtherRegex.ReplaceAllString(data, "")
@@ -51,6 +53,8 @@ func NewEntry(data string) *Entry {
 	}
 }
 
+// Entry represents a text entry with styled runes and provides methods to
+// compute its display width, handle line wrapping, and retrieve styled substrings.
 type Entry struct {
 	styledData []StyledRune
 	f          func() []int
@@ -86,33 +90,9 @@ func (e *Entry) StyledString() string {
 	return e.styledSubstring(0, len(e.styledData))
 }
 
-func (e *Entry) warpPositions(width int) []int {
-	if len(e.styledData) == 0 {
-		return nil
-	}
-	if width <= 2 {
-		width = 2
-
-	}
-
-	// 1,2,3,4,5,6,7,9,11
-	charPos := e.runeEndOffsets()
-	ret := make([]int, 1, len(charPos)/width+2)
-	ret[0] = 0
-	headPos := 0
-	for idx := 1; idx < len(charPos); idx++ {
-		pos := charPos[idx]
-		if pos-headPos > width {
-			headPos = charPos[idx-1]
-			ret = append(ret, idx)
-		}
-	}
-	return ret
-}
-
 // Lines returns the number of lines the entry would occupy when wrapped at the given width
 func (e *Entry) Lines(width int) int {
-	return max(1, len(e.warpPositions(width)))
+	return len(e.computeWarpPoints(width))
 }
 
 // RuneWidth returns the display width of a rune, considering East Asian wide characters.
@@ -179,22 +159,4 @@ func (e *Entry) styledSubstring(start, end int) string {
 
 func (e *Entry) StyledLines(width int) []string {
 	return e.StyledWarps(width)
-}
-
-// StyledWarps returns the entry split into lines, each line wrapped at the given width
-func (e *Entry) StyledWarps(width int) []string {
-	indexes := e.warpPositions(width)
-	if len(indexes) <= 1 {
-		// No wrapping needed, but still need to apply style
-		return []string{e.styledSubstring(0, len(e.styledData))}
-	}
-
-	var result []string
-	for i := 0; i < len(indexes)-1; i++ {
-		result = append(result, e.styledSubstring(indexes[i], indexes[i+1]))
-	}
-	// Append the last line
-	result = append(result, e.styledSubstring(indexes[len(indexes)-1], len(e.styledData)))
-
-	return result
 }
