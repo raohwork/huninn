@@ -69,6 +69,16 @@ type TaskManager interface {
 	AddTask(desc, id string) TaskController
 }
 
+// NopTaskManager returns a TaskManager that does nothing.
+//
+// This can be useful when you have to support both a UI and a non-UI mode.
+func NopTaskManager() TaskManager {
+	return taskManager{
+		id:   tapioca.NewID(),
+		send: func(tea.Msg) {},
+	}
+}
+
 type taskManager struct {
 	id   int64
 	send func(tea.Msg)
