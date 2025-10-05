@@ -150,7 +150,6 @@ func (l *TaskList) View() string { return l.impl.View() }
 
 func (l *TaskList) recomputeEntries() {
 	h := l.impl.Height()
-	l.impl.Clear()
 
 	rc := len(l.runningTasks)
 	pc := len(l.pendingTasks)
@@ -186,6 +185,8 @@ func (l *TaskList) recomputeEntries() {
 		}
 	}
 
+	lines := make([]string, 0, h)
+
 	// get last n running tasks
 	cList := l.completed[max(0, cc-cHeight):]
 	for x := range cHeight {
@@ -193,7 +194,7 @@ func (l *TaskList) recomputeEntries() {
 		if !ok {
 			continue
 		}
-		l.impl.Append(task.render())
+		lines = append(lines, task.render())
 	}
 
 	rList := l.runningTasks[:min(rc, rHeight)]
@@ -202,7 +203,7 @@ func (l *TaskList) recomputeEntries() {
 		if !ok {
 			continue
 		}
-		l.impl.Append(task.render())
+		lines = append(lines, task.render())
 	}
 
 	pList := l.pendingTasks[:min(pc, pHeight)]
@@ -211,6 +212,8 @@ func (l *TaskList) recomputeEntries() {
 		if !ok {
 			continue
 		}
-		l.impl.Append(task.render())
+		lines = append(lines, task.render())
 	}
+
+	l.impl.SetContent(lines...)
 }

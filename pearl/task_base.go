@@ -48,6 +48,7 @@ func newTaskInfo(id, desc string) *taskInfo {
 
 func (i *taskInfo) render() string {
 	b := &strings.Builder{}
+	b.Grow(len(i.desc) + 20)
 	// icon (emoji)
 	switch i.state {
 	case TaskPending:
@@ -96,7 +97,7 @@ func (i *taskInfo) render() string {
 // You might send task message by your own, or use [TaskManager].
 type TaskList struct {
 	tasks map[string]*taskInfo
-	impl  *tapioca.Component
+	impl  *Block
 	id    int64
 
 	// cached info
@@ -112,7 +113,7 @@ func NewTaskList() *TaskList {
 	return &TaskList{
 		id:    tapioca.NewID(),
 		tasks: make(map[string]*taskInfo),
-		impl:  tapioca.NewComponent(10, tapioca.HorizontalScrollable()),
+		impl:  NewBlock(),
 	}
 }
 

@@ -77,9 +77,11 @@ func (lp *LogPanel) UpdateInto(msg tea.Msg) (*LogPanel, tea.Cmd) {
 		if cmd != nil {
 			cmds = append(cmds, cmd)
 		}
-		lp.impl, cmd = lp.impl.UpdateInto(tapioca.ScrollBottomMsg{})
-		if cmd != nil {
-			cmds = append(cmds, cmd)
+		if !lp.Reverse {
+			lp.impl, cmd = lp.impl.UpdateInto(tapioca.ScrollBottomMsg{})
+			if cmd != nil {
+				cmds = append(cmds, cmd)
+			}
 		}
 	default:
 		var cmd tea.Cmd
