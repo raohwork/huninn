@@ -9,9 +9,13 @@ package tapioca
 type ComponentOption func(*Component)
 
 // HorizontalScrollable enables horizontal scrolling for the component.
+//
 // When enabled, text wrapping is disabled and entries are displayed as single
 // lines that can be scrolled horizontally. This is useful for viewing long
 // lines of text such as log entries or code.
+//
+// You have to send ScrollXXXMsg to [Component.Update] to actually scroll
+// the content.
 func HorizontalScrollable() ComponentOption {
 	return func(c *Component) {
 		c.hScroll = true
@@ -19,9 +23,13 @@ func HorizontalScrollable() ComponentOption {
 }
 
 // VerticalScrollable enables vertical scrolling for the component.
+//
 // When enabled, the component can scroll through entries vertically.
 // This is useful when you have more content than can fit in the available
 // height and want to allow users to navigate through the entries.
+//
+// You have to send ScrollXXXMsg to [Component.Update] to actually scroll
+// the content.
 func VerticalScrollable() ComponentOption {
 	return func(c *Component) {
 		c.vScroll = true
@@ -31,17 +39,19 @@ func VerticalScrollable() ComponentOption {
 // Component is the default implementation of a huninn component that provides
 // scrollable text display functionality.
 //
+// If you need proper control over text display, you might want to take a look
+// at [Entry].
+//
 // A huninn component MUST fulfill the following requirements:
 //   - Implement tea.Model interface
 //   - Handle ResizeMsg correctly
 //   - View() must return a string that exactly fits in the given width
 //     and height, like "a  \nb  \n   " for a 3x3 component
 //
-// This Component struct provides basic functionalities including:
-//   - Entry storage using a circular buffer
+// This Component struct provides some extra functionalities including:
+//   - Entry storage using a circular buffer as scroll buffer
 //   - Horizontal and vertical scrolling
-//   - Text wrapping control
-//   - Virtual screen to physical screen projection
+//   - Text wrapping
 //
 // # Embedding Component
 //
@@ -67,15 +77,6 @@ func VerticalScrollable() ComponentOption {
 //	    }
 //	}
 //
-// # Virtual Screen Concept
-//
-// The Component operates on a "virtual screen" concept where entries represent
-// lines of text with infinite width. The Component handles:
-//   - Text wrapping when horizontal scrolling is disabled
-//   - Horizontal scrolling when enabled (disables wrapping)
-//   - Vertical scrolling through the entry list
-//   - Projection from virtual screen to physical viewport
-//
 // # Scrolling Behavior
 //
 // Scrolling behavior is controlled by ComponentOption functions:
@@ -84,6 +85,12 @@ func VerticalScrollable() ComponentOption {
 //
 // When neither scrolling option is enabled, the component displays entries
 // with text wrapping but without scrolling capability.
+//
+// # Triggering scrolling
+//
+// You have to send ScrollXXXMsg to [Component.Update] to actually scroll
+// the content. The component does not scroll automatically when new entries
+// are added.
 //
 // # Resize Behavior
 //

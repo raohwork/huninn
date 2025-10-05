@@ -126,69 +126,47 @@ func (c *Component) blankScreen() string {
 }
 
 func (c *Component) viewWrap(entries []*Entry) string {
-	virtualLines := c.buildVirtualScreen(entries, false)
-	lines := make([]string, c.height)
+	lines := make([]string, 0, c.y+c.height)
+	totalEntries := len(entries)
 
-	startY := c.y
-	for i := 0; i < c.height; i++ {
-		lineIndex := startY + i
-		if lineIndex < len(virtualLines) {
-			lines[i] = c.padLine(virtualLines[lineIndex])
-		} else {
-			lines[i] = strings.Repeat(" ", c.width)
+	curLine, curIdx := 0, 0
+	// fill lines
+	for curLine < c.y+c.height && curIdx < totalEntries {
+		entry := entries[curIdx]
+		l := entry.StyledBlock(c.width)
+		h := len(l)
+
+		want := min(h, c.y+c.height-curLine)
+		lines = append(lines, l[:want]...)
+		curIdx++
+		curLine += want
+	}
+	if curLine < c.y+c.height {
+		padLine := strings.Repeat(" ", c.width)
+		for curLine < c.y+c.height {
+			lines = append(lines, padLine)
+			curLine++
 		}
 	}
 
-	return strings.Join(lines, "\n")
+	return strings.Join(lines[c.y:], "\n")
 }
 
 func (c *Component) viewNoWrap(entries []*Entry) string {
-	virtualLines := c.buildVirtualScreen(entries, true)
-	lines := make([]string, c.height)
+	if c.x+c.width > c.maxLineWidth {
+		c.x = max(0, c.maxLineWidth-c.width)
+	}
 
-	startY := c.y
-	for i := 0; i < c.height; i++ {
-		lineIndex := startY + i
-		if lineIndex < len(virtualLines) {
-			line := virtualLines[lineIndex]
-			// Apply horizontal scrolling
-			if c.x < len(line) {
-				end := min(c.x+c.width, len(line))
-				line = line[c.x:end]
-			} else {
-				line = ""
-			}
-			lines[i] = c.padLine(line)
-		} else {
-			lines[i] = strings.Repeat(" ", c.width)
-		}
+	wantedEntries := entries[c.y:min(c.y+c.height, len(entries))]
+	lines := make([]string, c.height)
+	for i := range wantedEntries {
+		lines[i] = wantedEntries[i].StyledMove(c.x, c.width)
+	}
+	for i := len(wantedEntries); i < c.height; i++ {
+		lines[i] = strings.Repeat(" ", c.width)
 	}
 
 	return strings.Join(lines, "\n")
-}
-
-func (c *Component) buildVirtualScreen(entries []*Entry, noWrap bool) []string {
-	var virtualLines []string
-
-	for _, entry := range entries {
-		if noWrap {
-			// No-wrap mode: each entry becomes one line
-			virtualLines = append(virtualLines, entry.String())
-		} else {
-			// Wrap mode: each entry may become multiple lines
-			wrappedLines := entry.StyledWarps(c.width)
-			virtualLines = append(virtualLines, wrappedLines...)
-		}
-	}
-
-	return virtualLines
-}
-
-func (c *Component) padLine(line string) string {
-	if len(line) >= c.width {
-		return line[:c.width]
-	}
-	return line + strings.Repeat(" ", c.width-len(line))
 }
 
 func (c *Component) recomputeCachedInfo() {

@@ -318,6 +318,28 @@ func TestComponent_BasicRendering(t *testing.T) {
 			}
 
 			assert.Equal(t, strings.Join(tc.expected, "\n"), strings.TrimRight(comp.View(), "\n"))
+
+			assert.Equal(t, "", IsThisTopping(ToppingTestSpec{
+				Width:  10,
+				Height: 3,
+				Model:  comp,
+			}))
 		})
 	}
+}
+
+func TestComponent_EdgeCase(t *testing.T) {
+	t.Run("height larger than entries, no warp", func(t *testing.T) {
+		comp := NewComponent(1, VerticalScrollable())
+		comp.Append("One")
+		comp.Update(ResizeMsg{Width: 5, Height: 2})
+		assert.Equal(t, "One  \n     ", comp.View())
+	})
+
+	t.Run("height larger than entries, with warp", func(t *testing.T) {
+		comp := NewComponent(1)
+		comp.Append("OneTwo")
+		comp.Update(ResizeMsg{Width: 3, Height: 3})
+		assert.Equal(t, "One\nTwo\n   ", comp.View())
+	})
 }
