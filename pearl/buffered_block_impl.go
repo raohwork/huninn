@@ -44,14 +44,6 @@ func (c *BufferedBlock) UpdateInto(msg tea.Msg) (*BufferedBlock, tea.Cmd) {
 		c.HandleEvent(msg)
 	}
 
-	// Ensure constraints are maintained
-	if !c.vScroll {
-		c.ScrollToTop()
-	}
-	if !c.hScroll {
-		c.ScrollToBegin()
-	}
-
 	if len(cmd) == 0 {
 		return c, nil
 	}

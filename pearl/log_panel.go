@@ -41,6 +41,10 @@ func NewLogPanel(size int) *LogPanel {
 	return lp
 }
 
+func (lp *LogPanel) ScrollController() tapioca.ScrollController {
+	return lp.impl
+}
+
 func (lp *LogPanel) Init() tea.Cmd {
 	return lp.impl.Init()
 }
@@ -65,11 +69,7 @@ func (lp *LogPanel) UpdateInto(msg tea.Msg) (*LogPanel, tea.Cmd) {
 		}
 
 		if !lp.Reverse {
-			var cmd tea.Cmd
-			lp.impl, cmd = lp.impl.UpdateInto(tapioca.ScrollBottomMsg{})
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
+			lp.impl.ScrollToBottom()
 		}
 	case tapioca.ResizeMsg:
 		var cmd tea.Cmd
@@ -78,10 +78,7 @@ func (lp *LogPanel) UpdateInto(msg tea.Msg) (*LogPanel, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 		if !lp.Reverse {
-			lp.impl, cmd = lp.impl.UpdateInto(tapioca.ScrollBottomMsg{})
-			if cmd != nil {
-				cmds = append(cmds, cmd)
-			}
+			lp.impl.ScrollToBottom()
 		}
 	default:
 		var cmd tea.Cmd
