@@ -17,9 +17,7 @@ type BufferedBlock struct {
 	// enable vertical scroll
 	vScroll bool
 
-	width  int
-	height int
-	x, y   int
+	tapioca.Scrollable
 
 	entries *tapioca.CircularBuffer[*tapioca.Entry]
 
@@ -71,16 +69,6 @@ func (c *BufferedBlock) ResizeBuffer(newSize int) {
 	c.entries.Resize(newSize)
 }
 
-// Width returns the current width of the component.
-func (c *BufferedBlock) Width() int {
-	return c.width
-}
-
-// Height returns the current height of the component.
-func (c *BufferedBlock) Height() int {
-	return c.height
-}
-
 // NewBufferedBlock creates a new component with the specified entry capacity.
 // The size parameter determines how many entries the circular buffer can hold.
 // When the buffer is full, adding new entries will overwrite the oldest ones.
@@ -90,5 +78,9 @@ func NewBufferedBlock(size int, hScroll, vScroll bool) *BufferedBlock {
 		hScroll: hScroll,
 		vScroll: vScroll,
 	}
+	ret.Scrollable = tapioca.NewScrollable(
+		func() int { return ret.maxLineWidth },
+		func() int { return ret.lines },
+	)
 	return ret
 }

@@ -33,3 +33,9 @@ type ScrollBeginMsg struct{}
 
 // ScrollEndMsg tells the component to scroll to the end of the line
 type ScrollEndMsg struct{}
+
+// ScrollToMsg tells the component to scroll to the specified column and row
+type ScrollToMsg struct {
+	X int
+	Y int
+}

@@ -30,61 +30,26 @@ func (c *BufferedBlock) UpdateInto(msg tea.Msg) (*BufferedBlock, tea.Cmd) {
 	var cmd []tea.Cmd
 	switch msg := msg.(type) {
 	case tapioca.ResizeMsg:
-		c.width, c.height = msg.Width, msg.Height
-		c.x, c.y = 0, 0 // Reset position after resize
+		c.HandleEvent(msg)
 		c.recomputeCachedInfo()
-	case tapioca.ScrollUpMsg:
-		if c.vScroll {
-			c.y -= int(msg)
-			if c.y < 0 {
-				c.y = 0
-			}
-		}
-	case tapioca.ScrollDownMsg:
-		if c.vScroll {
-			c.y += int(msg)
-			if c.y > c.lines-c.height {
-				c.y = c.lines - c.height
-			}
-		}
-	case tapioca.ScrollLeftMsg:
-		if c.hScroll {
-			c.x -= int(msg)
-			if c.x < 0 {
-				c.x = 0
-			}
-		}
-	case tapioca.ScrollRightMsg:
-		if c.hScroll {
-			c.x += int(msg)
-			if c.x > c.maxLineWidth-c.width {
-				c.x = c.maxLineWidth - c.width
-			}
-		}
-	case tapioca.ScrollTopMsg:
-		if c.vScroll {
-			c.y = 0
-		}
-	case tapioca.ScrollBottomMsg:
-		if c.vScroll {
-			c.y = c.lines - c.height
-		}
-	case tapioca.ScrollBeginMsg:
-		if c.hScroll {
-			c.x = 0
-		}
-	case tapioca.ScrollEndMsg:
-		if c.hScroll {
-			c.x = c.maxLineWidth - c.width
-		}
+	case tapioca.ScrollUpMsg,
+		tapioca.ScrollDownMsg,
+		tapioca.ScrollLeftMsg,
+		tapioca.ScrollRightMsg,
+		tapioca.ScrollTopMsg,
+		tapioca.ScrollBottomMsg,
+		tapioca.ScrollBeginMsg,
+		tapioca.ScrollEndMsg,
+		tapioca.ScrollToMsg:
+		c.HandleEvent(msg)
 	}
 
 	// Ensure constraints are maintained
 	if !c.vScroll {
-		c.y = 0
+		c.ScrollToTop()
 	}
 	if !c.hScroll {
-		c.x = 0
+		c.ScrollToBegin()
 	}
 
 	if len(cmd) == 0 {
@@ -97,7 +62,7 @@ func (c *BufferedBlock) UpdateInto(msg tea.Msg) (*BufferedBlock, tea.Cmd) {
 // of the current viewport, applying the current scroll position and wrapping
 // behavior based on the component's configuration.
 func (c *BufferedBlock) View() string {
-	if c.width <= 0 || c.height <= 0 {
+	if c.Width() <= 0 || c.Height() <= 0 {
 		return ""
 	}
 
@@ -118,8 +83,8 @@ func (c *BufferedBlock) View() string {
 }
 
 func (c *BufferedBlock) blankScreen() string {
-	line := strings.Repeat(" ", c.width)
-	lines := make([]string, c.height)
+	line := strings.Repeat(" ", c.Width())
+	lines := make([]string, c.Height())
 	for i := range lines {
 		lines[i] = line
 	}
@@ -127,44 +92,45 @@ func (c *BufferedBlock) blankScreen() string {
 }
 
 func (c *BufferedBlock) viewWrap(entries []*tapioca.Entry) string {
-	lines := make([]string, 0, c.y+c.height)
+	lines := make([]string, 0, c.Y()+c.Height())
 	totalEntries := len(entries)
 
 	curLine, curIdx := 0, 0
 	// fill lines
-	for curLine < c.y+c.height && curIdx < totalEntries {
+	for curLine < c.Y()+c.Height() && curIdx < totalEntries {
 		entry := entries[curIdx]
-		l := entry.StyledBlock(c.width)
+		l := entry.StyledBlock(c.Width())
 		h := len(l)
 
-		want := min(h, c.y+c.height-curLine)
+		want := min(h, c.Y()+c.Height()-curLine)
 		lines = append(lines, l[:want]...)
 		curIdx++
 		curLine += want
 	}
-	if curLine < c.y+c.height {
-		padLine := strings.Repeat(" ", c.width)
-		for curLine < c.y+c.height {
+	if curLine < c.Y()+c.Height() {
+		padLine := strings.Repeat(" ", c.Width())
+		for curLine < c.Y()+c.Height() {
 			lines = append(lines, padLine)
 			curLine++
 		}
 	}
 
-	return strings.Join(lines[c.y:], "\n")
+	return strings.Join(lines[c.Y():], "\n")
 }
 
 func (c *BufferedBlock) viewNoWrap(entries []*tapioca.Entry) string {
-	if c.x+c.width > c.maxLineWidth {
-		c.x = max(0, c.maxLineWidth-c.width)
+	if c.X()+c.Width() > c.maxLineWidth {
+		c.ScrollToBegin()
+		c.ScrollRight(c.maxLineWidth - c.Width())
 	}
 
-	wantedEntries := entries[c.y:min(c.y+c.height, len(entries))]
-	lines := make([]string, c.height)
+	wantedEntries := entries[c.Y():min(c.Y()+c.Height(), len(entries))]
+	lines := make([]string, c.Height())
 	for i := range wantedEntries {
-		lines[i] = wantedEntries[i].StyledMove(c.x, c.width)
+		lines[i] = wantedEntries[i].StyledMove(c.X(), c.Width())
 	}
-	for i := len(wantedEntries); i < c.height; i++ {
-		lines[i] = strings.Repeat(" ", c.width)
+	for i := len(wantedEntries); i < c.Height(); i++ {
+		lines[i] = strings.Repeat(" ", c.Width())
 	}
 
 	return strings.Join(lines, "\n")
@@ -186,16 +152,16 @@ func (c *BufferedBlock) recomputeLines(entries []*tapioca.Entry) {
 		// so virtual screen line count is total lines after wrapping
 		c.lines = 0
 		for _, e := range entries {
-			c.lines += e.Lines(c.width)
+			c.lines += e.Lines(c.Width())
 		}
 	}
 
 	// Virtual screen line count should be at least the physical screen height
-	c.lines = max(c.lines, c.height)
+	c.lines = max(c.lines, c.Height())
 }
 
 func (c *BufferedBlock) recomputeMaxLineWidth(entries []*tapioca.Entry) {
-	c.maxLineWidth = c.width
+	c.maxLineWidth = c.Width()
 	if !c.hScroll {
 		return
 	}
