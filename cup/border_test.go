@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/raohwork/huninn/pearl"
 	"github.com/raohwork/huninn/tapioca"
 	"github.com/stretchr/testify/assert"
 )
@@ -195,10 +196,8 @@ func TestBorderedBox_View_MissingOneBorder(t *testing.T) {
 			innerMock.On("Update", tapioca.ResizeMsg{Width: innerW, Height: innerH}).Return(innerMock, nil)
 			innerMock.On("View").Return(createExactSizeString(strings.Repeat("X", innerW*innerH), innerW, innerH))
 
-			box := &BorderedBox{
-				BorderConfig: tt.config,
-				inner:        innerMock,
-			}
+			box := NewBorderedBox(innerMock)
+			box.BorderConfig = tt.config
 			box.Init()
 			box.Update(tapioca.ResizeMsg{Width: termWidth, Height: termHeight})
 
@@ -329,10 +328,8 @@ func TestBorderedBox_View_OnlyOneBorder(t *testing.T) {
 			innerMock.On("Update", tapioca.ResizeMsg{Width: innerW, Height: innerH}).Return(innerMock, nil)
 			innerMock.On("View").Return(createExactSizeString(strings.Repeat("X", innerW*innerH), innerW, innerH))
 
-			box := &BorderedBox{
-				BorderConfig: tt.config,
-				inner:        innerMock,
-			}
+			box := NewBorderedBox(innerMock)
+			box.BorderConfig = tt.config
 			box.Init()
 			box.Update(tapioca.ResizeMsg{Width: termWidth, Height: termHeight})
 
@@ -342,4 +339,101 @@ func TestBorderedBox_View_OnlyOneBorder(t *testing.T) {
 			assert.Equal(t, tt.expected, actualRows)
 		})
 	}
+}
+
+func TestBorderedBox_RenderCaption(t *testing.T) {
+	cases := []struct {
+		name              string
+		caption           string
+		expectedString    string
+		expectedRestWidth int
+	}{
+		{
+			name:              "no caption",
+			caption:           "",
+			expectedString:    "",
+			expectedRestWidth: 8,
+		},
+		{
+			name:              "caption fits within width",
+			caption:           "abc",
+			expectedString:    "─ abc ─",
+			expectedRestWidth: 1,
+		},
+		{
+			name:              "caption exactly fits width",
+			caption:           "abcd",
+			expectedString:    "─ abcd ─",
+			expectedRestWidth: 0,
+		},
+		{
+			name:              "caption exceeds width",
+			caption:           "abcdefgh",
+			expectedString:    "─ ab… ─",
+			expectedRestWidth: 0,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			inner := pearl.NewBlock()
+			box := NewBorderedBox(inner)
+			box.BorderConfig = BorderConfig{
+				Top:            true,
+				Left:           true,
+				Right:          true,
+				VerticalLine:   '│',
+				HorizontalLine: '─',
+				TopLeftCorner:  '┌',
+				TopRightCorner: '┐',
+			}
+			box.Init()
+			box.Update(tapioca.ResizeMsg{Width: 10, Height: 3})
+			box.SetCaption(tc.caption)
+			buf := &strings.Builder{}
+			restWidth := box.renderCaption(buf)
+			result := buf.String()
+			assert.Equal(t, tc.expectedString, result)
+			assert.Equal(t, tc.expectedRestWidth, restWidth)
+		})
+	}
+}
+
+func TestBorderedBox_CaptionCases(t *testing.T) {
+	f := func(expected []string) string {
+		return strings.Join(expected, "\n")
+	}
+
+	t.Run("no top border", func(t *testing.T) {
+		inner := pearl.NewBlock()
+		box := NewBorderedBox(inner)
+		box.BorderConfig.Top = false
+		box.Init()
+		box.Update(tapioca.ResizeMsg{Width: 8, Height: 3})
+		box.SetCaption("a")
+		expected := f([]string{
+			"│      │",
+			"│      │",
+			"└──────┘",
+		})
+
+		result := box.View()
+		assert.Equal(t, expected, result)
+	})
+
+	t.Run("with top border", func(t *testing.T) {
+		inner := pearl.NewBlock()
+		box := NewBorderedBox(inner)
+		box.Init()
+		box.Update(tapioca.ResizeMsg{Width: 8, Height: 3})
+		box.SetCaption("a")
+		expected := f([]string{
+			"┌─ a ──┐",
+			"│      │",
+			"└──────┘",
+		})
+
+		result := box.View()
+		assert.Equal(t, expected, result)
+	})
 }

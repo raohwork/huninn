@@ -47,8 +47,10 @@ func (bc *BorderConfig) size() (v, h int) {
 }
 
 type BorderedBox struct {
+	id int64
 	BorderConfig
-	inner tea.Model
+	caption *tapioca.Entry
+	inner   tea.Model
 
 	// width caches, computed only once in init
 	vLineWidth int // width of single vertical line rune
@@ -69,10 +71,31 @@ type BorderedBox struct {
 	reminder bool
 }
 
+type BorderedBoxSetCaptionMsg struct {
+	id      int64
+	caption string
+}
+
 func NewBorderedBox(inner tea.Model) *BorderedBox {
+	return NewBorderedBoxWithCaption(inner, "")
+}
+
+func NewBorderedBoxWithCaption(inner tea.Model, caption string) *BorderedBox {
 	return &BorderedBox{
+		id:           tapioca.NewID(),
 		BorderConfig: DefaultBorderConfig(),
 		inner:        inner,
+		caption:      tapioca.NewEntry(caption),
+	}
+}
+
+func (b *BorderedBox) SetCaption(c string) {
+	b.caption = tapioca.NewEntry(c)
+}
+
+func (b *BorderedBox) Setter(send func(tea.Msg)) func(string) {
+	return func(c string) {
+		send(BorderedBoxSetCaptionMsg{b.id, c})
 	}
 }
 
@@ -88,6 +111,10 @@ func (b *BorderedBox) Init() tea.Cmd {
 func (b *BorderedBox) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
+	case BorderedBoxSetCaptionMsg:
+		if msg.id == b.id {
+			b.SetCaption(msg.caption)
+		}
 	case tapioca.ResizeMsg:
 		b.computeSize(msg.Width, msg.Height)
 		b.inner, cmd = b.inner.Update(tapioca.ResizeMsg{
@@ -131,24 +158,10 @@ func (b *BorderedBox) View() string {
 	}
 
 	buf := &strings.Builder{}
-	buf.Grow(b.size)
+	buf.Grow(b.size + b.size/2) // preallocate memory with ANSI codes
 
 	if b.Top {
-		w := b.wReserve
-		if b.Left {
-			buf.WriteRune(b.TopLeftCorner)
-		}
-		for w >= b.hLineWidth {
-			buf.WriteRune(b.HorizontalLine)
-			w -= b.hLineWidth
-		}
-		if b.Right {
-			buf.WriteRune(b.TopRightCorner)
-		}
-		if b.reminder {
-			buf.WriteRune(' ')
-		}
-		buf.WriteRune('\n')
+		b.renderTop(buf)
 	}
 
 	// render inner component
@@ -186,4 +199,58 @@ func (b *BorderedBox) View() string {
 	}
 
 	return buf.String()
+}
+
+// we have caption and space for it, render now
+// the whole caption is (if border character is "-")
+//
+//	"- caption -": space >= caption width
+//	"- cap... -": space < caption width
+//	"- … -": edge case, extreamly small space
+func (b *BorderedBox) renderCaption(buf *strings.Builder) int {
+	wreserved := b.wReserve
+	captionWidth := b.caption.Width()
+	if captionWidth <= 0 || wreserved < b.hLineWidth*2+4 {
+		return wreserved
+	}
+
+	// preserve left and right paddings (space and border char)
+	wreserved -= b.hLineWidth*2 + 2
+	// render left padding
+	buf.WriteRune(b.HorizontalLine)
+	buf.WriteRune(' ')
+
+	have := min(captionWidth, wreserved)
+	wreserved -= have
+
+	if captionWidth > have {
+		buf.WriteString(b.caption.StyledMove(0, have-2))
+		buf.WriteString("…")
+	} else {
+		buf.WriteString(b.caption.StyledMove(0, have))
+	}
+
+	buf.WriteRune(' ')
+	buf.WriteRune(b.HorizontalLine)
+
+	return wreserved
+}
+
+func (b *BorderedBox) renderTop(buf *strings.Builder) {
+	if b.Left {
+		buf.WriteRune(b.TopLeftCorner)
+	}
+
+	w := b.renderCaption(buf)
+	for w >= b.hLineWidth {
+		buf.WriteRune(b.HorizontalLine)
+		w -= b.hLineWidth
+	}
+	if b.Right {
+		buf.WriteRune(b.TopRightCorner)
+	}
+	if b.reminder {
+		buf.WriteRune(' ')
+	}
+	buf.WriteRune('\n')
 }
