@@ -89,7 +89,7 @@ func (e *Entry) substringWidth(start, end int) int {
 // width of 2.
 func (e *Entry) StyledBlock(width int) []string {
 	if len(e.styledData) < 1 {
-		return []string{""}
+		return []string{strings.Repeat(" ", max(1, width))}
 	}
 
 	width = max(1, width)
