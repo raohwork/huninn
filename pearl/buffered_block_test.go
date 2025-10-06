@@ -2,13 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package tapioca
+package pearl
 
 import (
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/raohwork/huninn/tapioca"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,49 +45,49 @@ func TestComponent_BasicRendering(t *testing.T) {
 		// horizontal scrolling
 		{
 			name:     "horizontal scrolling, long string",
-			msgs:     []tea.Msg{ScrollRightMsg(1)},
+			msgs:     []tea.Msg{tapioca.ScrollRightMsg(1)},
 			entries:  []string{"Hello", "Hello, World!", "World"},
 			hScroll:  true,
 			expected: []string{"ello      ", "ello, Worl", "orld      "},
 		},
 		{
 			name:     "horizontal scrolling, long string, scroll exactly to the end",
-			msgs:     []tea.Msg{ScrollRightMsg(3)},
+			msgs:     []tea.Msg{tapioca.ScrollRightMsg(3)},
 			entries:  []string{"Hello", "Hello, World!", "World"},
 			hScroll:  true,
 			expected: []string{"lo        ", "lo, World!", "ld        "},
 		},
 		{
 			name:     "horizontal scrolling, long string, scroll beyond the end",
-			msgs:     []tea.Msg{ScrollRightMsg(5)},
+			msgs:     []tea.Msg{tapioca.ScrollRightMsg(5)},
 			entries:  []string{"Hello", "Hello, World!", "World"},
 			hScroll:  true,
 			expected: []string{"lo        ", "lo, World!", "ld        "},
 		},
 		{
 			name:     "horizontal scrolling to end",
-			msgs:     []tea.Msg{ScrollEndMsg{}},
+			msgs:     []tea.Msg{tapioca.ScrollEndMsg{}},
 			entries:  []string{"Hello", "Hello, World!", "World"},
 			hScroll:  true,
 			expected: []string{"lo        ", "lo, World!", "ld        "},
 		},
 		{
 			name:     "horizontal scrolling to end, then back 1 char",
-			msgs:     []tea.Msg{ScrollEndMsg{}, ScrollLeftMsg(1)},
+			msgs:     []tea.Msg{tapioca.ScrollEndMsg{}, tapioca.ScrollLeftMsg(1)},
 			entries:  []string{"Hello", "Hello, World!", "World"},
 			hScroll:  true,
 			expected: []string{"llo       ", "llo, World", "rld       "},
 		},
 		{
 			name:     "horizontal scrolling to end, then back beyond start",
-			msgs:     []tea.Msg{ScrollEndMsg{}, ScrollLeftMsg(10)},
+			msgs:     []tea.Msg{tapioca.ScrollEndMsg{}, tapioca.ScrollLeftMsg(10)},
 			entries:  []string{"Hello", "Hello, World!", "World"},
 			hScroll:  true,
 			expected: []string{"Hello     ", "Hello, Wor", "World     "},
 		},
 		{
 			name:     "horizontal scrolling to end, then scroll to beginning",
-			msgs:     []tea.Msg{ScrollEndMsg{}, ScrollBeginMsg{}},
+			msgs:     []tea.Msg{tapioca.ScrollEndMsg{}, tapioca.ScrollBeginMsg{}},
 			entries:  []string{"Hello", "Hello, World!", "World"},
 			hScroll:  true,
 			expected: []string{"Hello     ", "Hello, Wor", "World     "},
@@ -94,49 +95,49 @@ func TestComponent_BasicRendering(t *testing.T) {
 		// vertical scrolling with short lines
 		{
 			name:     "vertical scrolling, multiple short entries",
-			msgs:     []tea.Msg{ScrollDownMsg(1)},
+			msgs:     []tea.Msg{tapioca.ScrollDownMsg(1)},
 			entries:  []string{"One", "Two", "Three", "Four", "Five"},
 			vScroll:  true,
 			expected: []string{"Two       ", "Three     ", "Four      "},
 		},
 		{
 			name:     "vertical scrolling, multiple short entries, scroll exactly to the end",
-			msgs:     []tea.Msg{ScrollDownMsg(2)},
+			msgs:     []tea.Msg{tapioca.ScrollDownMsg(2)},
 			entries:  []string{"One", "Two", "Three", "Four", "Five"},
 			vScroll:  true,
 			expected: []string{"Three     ", "Four      ", "Five      "},
 		},
 		{
 			name:     "vertical scrolling, multiple short entries, scroll beyond the end",
-			msgs:     []tea.Msg{ScrollDownMsg(5)},
+			msgs:     []tea.Msg{tapioca.ScrollDownMsg(5)},
 			entries:  []string{"One", "Two", "Three", "Four", "Five"},
 			vScroll:  true,
 			expected: []string{"Three     ", "Four      ", "Five      "},
 		},
 		{
 			name:     "vertical scrolling to end",
-			msgs:     []tea.Msg{ScrollBottomMsg{}},
+			msgs:     []tea.Msg{tapioca.ScrollBottomMsg{}},
 			entries:  []string{"One", "Two", "Three", "Four", "Five"},
 			vScroll:  true,
 			expected: []string{"Three     ", "Four      ", "Five      "},
 		},
 		{
 			name:     "vertical scrolling to end, then back 1 entry",
-			msgs:     []tea.Msg{ScrollBottomMsg{}, ScrollUpMsg(1)},
+			msgs:     []tea.Msg{tapioca.ScrollBottomMsg{}, tapioca.ScrollUpMsg(1)},
 			entries:  []string{"One", "Two", "Three", "Four", "Five"},
 			vScroll:  true,
 			expected: []string{"Two       ", "Three     ", "Four      "},
 		},
 		{
 			name:     "vertical scrolling to end, then back beyond start",
-			msgs:     []tea.Msg{ScrollBottomMsg{}, ScrollUpMsg(10)},
+			msgs:     []tea.Msg{tapioca.ScrollBottomMsg{}, tapioca.ScrollUpMsg(10)},
 			entries:  []string{"One", "Two", "Three", "Four", "Five"},
 			vScroll:  true,
 			expected: []string{"One       ", "Two       ", "Three     "},
 		},
 		{
 			name:     "vertical scrolling to end, then scroll to top",
-			msgs:     []tea.Msg{ScrollBottomMsg{}, ScrollTopMsg{}},
+			msgs:     []tea.Msg{tapioca.ScrollBottomMsg{}, tapioca.ScrollTopMsg{}},
 			entries:  []string{"One", "Two", "Three", "Four", "Five"},
 			vScroll:  true,
 			expected: []string{"One       ", "Two       ", "Three     "},
@@ -144,49 +145,49 @@ func TestComponent_BasicRendering(t *testing.T) {
 		// vertical scrolling with long lines and warping
 		{
 			name:     "vertical scrolling, multiple long entries with wrapping",
-			msgs:     []tea.Msg{ScrollDownMsg(1)},
+			msgs:     []tea.Msg{tapioca.ScrollDownMsg(1)},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour"},
 			vScroll:  true,
 			expected: []string{"TwoTwo    ", "ThreeThree", "Three     "},
 		},
 		{
 			name:     "vertical scrolling, multiple long entries with wrapping, scroll exactly to the end",
-			msgs:     []tea.Msg{ScrollDownMsg(3)},
+			msgs:     []tea.Msg{tapioca.ScrollDownMsg(3)},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour"},
 			vScroll:  true,
 			expected: []string{"Three     ", "FourFourFo", "urFour    "},
 		},
 		{
 			name:     "vertical scrolling, multiple long entries with wrapping, scroll beyond the end",
-			msgs:     []tea.Msg{ScrollDownMsg(10)},
+			msgs:     []tea.Msg{tapioca.ScrollDownMsg(10)},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour"},
 			vScroll:  true,
 			expected: []string{"Three     ", "FourFourFo", "urFour    "},
 		},
 		{
 			name:     "vertical scrolling to end with wrapping",
-			msgs:     []tea.Msg{ScrollBottomMsg{}},
+			msgs:     []tea.Msg{tapioca.ScrollBottomMsg{}},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour"},
 			vScroll:  true,
 			expected: []string{"Three     ", "FourFourFo", "urFour    "},
 		},
 		{
 			name:     "vertical scrolling to end with wrapping, then back 1 entry",
-			msgs:     []tea.Msg{ScrollBottomMsg{}, ScrollUpMsg(1)},
+			msgs:     []tea.Msg{tapioca.ScrollBottomMsg{}, tapioca.ScrollUpMsg(1)},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour"},
 			vScroll:  true,
 			expected: []string{"ThreeThree", "Three     ", "FourFourFo"},
 		},
 		{
 			name:     "vertical scrolling to end with wrapping, then back beyond start",
-			msgs:     []tea.Msg{ScrollBottomMsg{}, ScrollUpMsg(10)},
+			msgs:     []tea.Msg{tapioca.ScrollBottomMsg{}, tapioca.ScrollUpMsg(10)},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour"},
 			vScroll:  true,
 			expected: []string{"One       ", "TwoTwo    ", "ThreeThree"},
 		},
 		{
 			name:     "vertical scrolling to end with wrapping, then scroll to beginning",
-			msgs:     []tea.Msg{ScrollBottomMsg{}, ScrollTopMsg{}},
+			msgs:     []tea.Msg{tapioca.ScrollBottomMsg{}, tapioca.ScrollTopMsg{}},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour"},
 			vScroll:  true,
 			expected: []string{"One       ", "TwoTwo    ", "ThreeThree"},
@@ -194,7 +195,7 @@ func TestComponent_BasicRendering(t *testing.T) {
 		// vertical scrolling with long lines and no warping
 		{
 			name:     "vertical scrolling, multiple long entries without wrapping",
-			msgs:     []tea.Msg{ScrollDownMsg(1)},
+			msgs:     []tea.Msg{tapioca.ScrollDownMsg(1)},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour", "FiveFiveFiveFive"},
 			vScroll:  true,
 			hScroll:  true,
@@ -202,7 +203,7 @@ func TestComponent_BasicRendering(t *testing.T) {
 		},
 		{
 			name:     "vertical scrolling, multiple long entries without wrapping, scroll exactly to the end",
-			msgs:     []tea.Msg{ScrollDownMsg(2)},
+			msgs:     []tea.Msg{tapioca.ScrollDownMsg(2)},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour", "FiveFiveFiveFive"},
 			vScroll:  true,
 			hScroll:  true,
@@ -210,7 +211,7 @@ func TestComponent_BasicRendering(t *testing.T) {
 		},
 		{
 			name:     "vertical scrolling, multiple long entries without wrapping, scroll beyond the end",
-			msgs:     []tea.Msg{ScrollDownMsg(5)},
+			msgs:     []tea.Msg{tapioca.ScrollDownMsg(5)},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour", "FiveFiveFiveFive"},
 			vScroll:  true,
 			hScroll:  true,
@@ -218,7 +219,7 @@ func TestComponent_BasicRendering(t *testing.T) {
 		},
 		{
 			name:     "vertical scrolling to end with no wrapping",
-			msgs:     []tea.Msg{ScrollBottomMsg{}},
+			msgs:     []tea.Msg{tapioca.ScrollBottomMsg{}},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour", "FiveFiveFiveFive"},
 			vScroll:  true,
 			hScroll:  true,
@@ -226,7 +227,7 @@ func TestComponent_BasicRendering(t *testing.T) {
 		},
 		{
 			name:     "vertical scrolling to end with no wrapping, then back 1 entry",
-			msgs:     []tea.Msg{ScrollBottomMsg{}, ScrollUpMsg(1)},
+			msgs:     []tea.Msg{tapioca.ScrollBottomMsg{}, tapioca.ScrollUpMsg(1)},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour", "FiveFiveFiveFive"},
 			vScroll:  true,
 			hScroll:  true,
@@ -234,7 +235,7 @@ func TestComponent_BasicRendering(t *testing.T) {
 		},
 		{
 			name:     "vertical scrolling to end with no wrapping, then back beyond start",
-			msgs:     []tea.Msg{ScrollBottomMsg{}, ScrollUpMsg(10)},
+			msgs:     []tea.Msg{tapioca.ScrollBottomMsg{}, tapioca.ScrollUpMsg(10)},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour", "FiveFiveFiveFive"},
 			vScroll:  true,
 			hScroll:  true,
@@ -242,7 +243,7 @@ func TestComponent_BasicRendering(t *testing.T) {
 		},
 		{
 			name:     "vertical scrolling to end with no wrapping, then scroll to beginning",
-			msgs:     []tea.Msg{ScrollBottomMsg{}, ScrollTopMsg{}},
+			msgs:     []tea.Msg{tapioca.ScrollBottomMsg{}, tapioca.ScrollTopMsg{}},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour", "FiveFiveFiveFive"},
 			vScroll:  true,
 			hScroll:  true,
@@ -251,7 +252,7 @@ func TestComponent_BasicRendering(t *testing.T) {
 		// both horizontal and vertical scrolling
 		{
 			name:    "both horizontal and vertical scrolling with warp",
-			msgs:    []tea.Msg{ScrollRightMsg(3), ScrollDownMsg(1)},
+			msgs:    []tea.Msg{tapioca.ScrollRightMsg(3), tapioca.ScrollDownMsg(1)},
 			entries: []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour"},
 			vScroll: true,
 			expected: []string{
@@ -262,7 +263,7 @@ func TestComponent_BasicRendering(t *testing.T) {
 		},
 		{
 			name:     "both horizontal and vertical scrolling without warp",
-			msgs:     []tea.Msg{ScrollRightMsg(3), ScrollDownMsg(1)},
+			msgs:     []tea.Msg{tapioca.ScrollRightMsg(3), tapioca.ScrollDownMsg(1)},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour", "FiveFiveFiveFive"},
 			vScroll:  true,
 			hScroll:  true,
@@ -270,7 +271,7 @@ func TestComponent_BasicRendering(t *testing.T) {
 		},
 		{
 			name:    "both vertical and horizontal scrolling with warp",
-			msgs:    []tea.Msg{ScrollDownMsg(1), ScrollRightMsg(3)},
+			msgs:    []tea.Msg{tapioca.ScrollDownMsg(1), tapioca.ScrollRightMsg(3)},
 			entries: []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour"},
 			vScroll: true,
 			expected: []string{
@@ -281,7 +282,7 @@ func TestComponent_BasicRendering(t *testing.T) {
 		},
 		{
 			name:     "both vertical and horizontal scrolling without warp",
-			msgs:     []tea.Msg{ScrollDownMsg(1), ScrollRightMsg(3)},
+			msgs:     []tea.Msg{tapioca.ScrollDownMsg(1), tapioca.ScrollRightMsg(3)},
 			entries:  []string{"One", "TwoTwo", "ThreeThreeThree", "FourFourFourFour", "FiveFiveFiveFive"},
 			vScroll:  true,
 			hScroll:  true,
@@ -291,18 +292,11 @@ func TestComponent_BasicRendering(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			options := []ComponentOption{}
-			if tc.hScroll {
-				options = append(options, HorizontalScrollable())
-			}
-			if tc.vScroll {
-				options = append(options, VerticalScrollable())
-			}
-			comp := NewComponent(10, options...)
+			comp := NewBufferedBlock(10, tc.hScroll, tc.vScroll)
 			for _, entry := range tc.entries {
 				comp.Append(entry)
 			}
-			comp.Update(ResizeMsg{Width: 10, Height: 3})
+			comp.Update(tapioca.ResizeMsg{Width: 10, Height: 3})
 			for _, msg := range tc.msgs {
 				comp.Update(msg)
 			}
@@ -319,7 +313,7 @@ func TestComponent_BasicRendering(t *testing.T) {
 
 			assert.Equal(t, strings.Join(tc.expected, "\n"), strings.TrimRight(comp.View(), "\n"))
 
-			assert.Equal(t, "", IsThisTopping(ToppingTestSpec{
+			assert.Equal(t, "", tapioca.IsThisTopping(tapioca.ToppingTestSpec{
 				Width:  10,
 				Height: 3,
 				Model:  comp,
@@ -330,16 +324,16 @@ func TestComponent_BasicRendering(t *testing.T) {
 
 func TestComponent_EdgeCase(t *testing.T) {
 	t.Run("height larger than entries, no warp", func(t *testing.T) {
-		comp := NewComponent(1, VerticalScrollable())
+		comp := NewBufferedBlock(1, false, true)
 		comp.Append("One")
-		comp.Update(ResizeMsg{Width: 5, Height: 2})
+		comp.Update(tapioca.ResizeMsg{Width: 5, Height: 2})
 		assert.Equal(t, "One  \n     ", comp.View())
 	})
 
 	t.Run("height larger than entries, with warp", func(t *testing.T) {
-		comp := NewComponent(1)
+		comp := NewBufferedBlock(1, false, false)
 		comp.Append("OneTwo")
-		comp.Update(ResizeMsg{Width: 3, Height: 3})
+		comp.Update(tapioca.ResizeMsg{Width: 3, Height: 3})
 		assert.Equal(t, "One\nTwo\n   ", comp.View())
 	})
 }

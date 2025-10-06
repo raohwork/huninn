@@ -2,22 +2,23 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package tapioca
+package pearl
 
 import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/raohwork/huninn/tapioca"
 )
 
 // Init implements the tea.Model interface.
-func (c *Component) Init() tea.Cmd { return nil }
+func (c *BufferedBlock) Init() tea.Cmd { return nil }
 
 // Update implements the tea.Model interface. It handles ResizeMsg and scroll-related
 // messages. When embedding this Component in your own model, you should forward
 // ResizeMsg and scroll messages to this method while handling your own messages
 // separately.
-func (c *Component) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (c *BufferedBlock) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return c.UpdateInto(msg)
 }
 
@@ -25,54 +26,54 @@ func (c *Component) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 //
 // This is useful when embedding this Component in your own model, as it avoids
 // the need for type assertions.
-func (c *Component) UpdateInto(msg tea.Msg) (*Component, tea.Cmd) {
+func (c *BufferedBlock) UpdateInto(msg tea.Msg) (*BufferedBlock, tea.Cmd) {
 	var cmd []tea.Cmd
 	switch msg := msg.(type) {
-	case ResizeMsg:
+	case tapioca.ResizeMsg:
 		c.width, c.height = msg.Width, msg.Height
 		c.x, c.y = 0, 0 // Reset position after resize
 		c.recomputeCachedInfo()
-	case ScrollUpMsg:
+	case tapioca.ScrollUpMsg:
 		if c.vScroll {
 			c.y -= int(msg)
 			if c.y < 0 {
 				c.y = 0
 			}
 		}
-	case ScrollDownMsg:
+	case tapioca.ScrollDownMsg:
 		if c.vScroll {
 			c.y += int(msg)
 			if c.y > c.lines-c.height {
 				c.y = c.lines - c.height
 			}
 		}
-	case ScrollLeftMsg:
+	case tapioca.ScrollLeftMsg:
 		if c.hScroll {
 			c.x -= int(msg)
 			if c.x < 0 {
 				c.x = 0
 			}
 		}
-	case ScrollRightMsg:
+	case tapioca.ScrollRightMsg:
 		if c.hScroll {
 			c.x += int(msg)
 			if c.x > c.maxLineWidth-c.width {
 				c.x = c.maxLineWidth - c.width
 			}
 		}
-	case ScrollTopMsg:
+	case tapioca.ScrollTopMsg:
 		if c.vScroll {
 			c.y = 0
 		}
-	case ScrollBottomMsg:
+	case tapioca.ScrollBottomMsg:
 		if c.vScroll {
 			c.y = c.lines - c.height
 		}
-	case ScrollBeginMsg:
+	case tapioca.ScrollBeginMsg:
 		if c.hScroll {
 			c.x = 0
 		}
-	case ScrollEndMsg:
+	case tapioca.ScrollEndMsg:
 		if c.hScroll {
 			c.x = c.maxLineWidth - c.width
 		}
@@ -95,7 +96,7 @@ func (c *Component) UpdateInto(msg tea.Msg) (*Component, tea.Cmd) {
 // View implements the tea.Model interface. It returns a string representation
 // of the current viewport, applying the current scroll position and wrapping
 // behavior based on the component's configuration.
-func (c *Component) View() string {
+func (c *BufferedBlock) View() string {
 	if c.width <= 0 || c.height <= 0 {
 		return ""
 	}
@@ -116,7 +117,7 @@ func (c *Component) View() string {
 	}
 }
 
-func (c *Component) blankScreen() string {
+func (c *BufferedBlock) blankScreen() string {
 	line := strings.Repeat(" ", c.width)
 	lines := make([]string, c.height)
 	for i := range lines {
@@ -125,7 +126,7 @@ func (c *Component) blankScreen() string {
 	return strings.Join(lines, "\n")
 }
 
-func (c *Component) viewWrap(entries []*Entry) string {
+func (c *BufferedBlock) viewWrap(entries []*tapioca.Entry) string {
 	lines := make([]string, 0, c.y+c.height)
 	totalEntries := len(entries)
 
@@ -152,7 +153,7 @@ func (c *Component) viewWrap(entries []*Entry) string {
 	return strings.Join(lines[c.y:], "\n")
 }
 
-func (c *Component) viewNoWrap(entries []*Entry) string {
+func (c *BufferedBlock) viewNoWrap(entries []*tapioca.Entry) string {
 	if c.x+c.width > c.maxLineWidth {
 		c.x = max(0, c.maxLineWidth-c.width)
 	}
@@ -169,13 +170,13 @@ func (c *Component) viewNoWrap(entries []*Entry) string {
 	return strings.Join(lines, "\n")
 }
 
-func (c *Component) recomputeCachedInfo() {
+func (c *BufferedBlock) recomputeCachedInfo() {
 	entries := c.entries.GetAll()
 	c.recomputeLines(entries)
 	c.recomputeMaxLineWidth(entries)
 }
 
-func (c *Component) recomputeLines(entries []*Entry) {
+func (c *BufferedBlock) recomputeLines(entries []*tapioca.Entry) {
 	if c.hScroll {
 		// When horizontal scrolling is enabled, no wrapping occurs,
 		// so virtual screen line count equals number of entries
@@ -193,7 +194,7 @@ func (c *Component) recomputeLines(entries []*Entry) {
 	c.lines = max(c.lines, c.height)
 }
 
-func (c *Component) recomputeMaxLineWidth(entries []*Entry) {
+func (c *BufferedBlock) recomputeMaxLineWidth(entries []*tapioca.Entry) {
 	c.maxLineWidth = c.width
 	if !c.hScroll {
 		return

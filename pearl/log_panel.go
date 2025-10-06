@@ -24,7 +24,7 @@ type LogPanel struct {
 	// by default, new log messages are placed at the bottom
 	Reverse bool
 
-	impl *tapioca.Component
+	impl *BufferedBlock
 }
 
 // LogMsg denotes a logger has written a log message to LogPanel.
@@ -36,7 +36,7 @@ func NewLogPanel(size int) *LogPanel {
 		size = 10
 	}
 	lp := &LogPanel{
-		impl: tapioca.NewComponent(size, tapioca.VerticalScrollable()),
+		impl: NewBufferedBlock(size, false, true),
 	}
 	return lp
 }
