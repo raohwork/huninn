@@ -45,5 +45,14 @@ func TestSpan(t *testing.T) {
 				Model:  b,
 			}))
 		})
+
+		t.Run(fmt.Sprintf("%dx%d empty", c.width, c.height), func(t *testing.T) {
+			b := NewSpan()
+			assert.Equal(t, "", tapioca.IsThisTopping(tapioca.ToppingTestSpec{
+				Width:  c.width,
+				Height: c.height,
+				Model:  b,
+			}))
+		})
 	}
 }
