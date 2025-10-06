@@ -11,7 +11,7 @@ import (
 	"github.com/raohwork/huninn/tapioca"
 )
 
-// Block is a component that displays a line of text with scrollable capabilities.
+// Block is a component that displays lines of text with scrollable capabilities.
 type Block struct {
 	id         int64
 	entries    []*tapioca.Entry
